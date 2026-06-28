@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { BOOKINGS, SYNC_DATA, Booking } from './constants';
+import { CUSTOMER_PAYMENTS, CustomerPayment } from './payments_data';
 import Header_ar from './components/Header_ar';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -29,6 +30,10 @@ const App_ar: React.FC<{ onToggleLanguage: () => void }> = ({ onToggleLanguage }
     const [sortField, setSortField] = useState<keyof Booking>('id');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [showFormulasModal, setShowFormulasModal] = useState(false);
+
+    // Interactive state for customer payment list
+    const [paymentSearch, setPaymentSearch] = useState('');
+    const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
 
     // Filter and sort bookings
     const filteredAndSortedBookings = useMemo(() => {
@@ -93,6 +98,57 @@ const App_ar: React.FC<{ onToggleLanguage: () => void }> = ({ onToggleLanguage }
             setSortDirection('asc');
         }
     };
+
+    // Filtered customer payments list
+    const filteredPayments = useMemo(() => {
+        let result = [...CUSTOMER_PAYMENTS];
+
+        // Apply Search
+        if (paymentSearch.trim() !== '') {
+            const query = paymentSearch.toLowerCase();
+            result = result.filter(item => 
+                item.inputName.toLowerCase().includes(query) ||
+                item.matchedName.toLowerCase().includes(query) ||
+                item.matchedNameAr.toLowerCase().includes(query) ||
+                item.branch.toLowerCase().includes(query)
+            );
+        }
+
+        // Apply Status Filter
+        if (paymentFilter === 'paid') {
+            result = result.filter(item => item.status === 'Confirmed');
+        } else if (paymentFilter === 'unpaid') {
+            result = result.filter(item => item.status !== 'Confirmed');
+        }
+
+        return result;
+    }, [paymentSearch, paymentFilter]);
+
+    // Computed payment metrics
+    const paymentMetrics = useMemo(() => {
+        const totalRent = CUSTOMER_PAYMENTS.reduce((sum, item) => sum + item.rent, 0);
+        const totalMathwaa = CUSTOMER_PAYMENTS.reduce((sum, item) => sum + item.juneCash, 0);
+
+        const paidRent = CUSTOMER_PAYMENTS.filter(item => item.status === 'Confirmed').reduce((sum, item) => sum + item.rent, 0);
+        const paidMathwaa = CUSTOMER_PAYMENTS.filter(item => item.status === 'Confirmed').reduce((sum, item) => sum + item.juneCash, 0);
+
+        const pendingRent = CUSTOMER_PAYMENTS.filter(item => item.status !== 'Confirmed').reduce((sum, item) => sum + item.rent, 0);
+        const pendingMathwaa = CUSTOMER_PAYMENTS.filter(item => item.status !== 'Confirmed').reduce((sum, item) => sum + item.juneCash, 0);
+
+        const paidCount = CUSTOMER_PAYMENTS.filter(item => item.status === 'Confirmed').length;
+        const totalCount = CUSTOMER_PAYMENTS.length;
+
+        return {
+            totalRent,
+            totalMathwaa,
+            paidRent,
+            paidMathwaa,
+            pendingRent,
+            pendingMathwaa,
+            paidCount,
+            totalCount
+        };
+    }, []);
 
     // Performance VS Other chart data
     const sourceChartData = SYNC_DATA.sourceBreakdown.map(item => ({
@@ -591,7 +647,186 @@ const App_ar: React.FC<{ onToggleLanguage: () => void }> = ({ onToggleLanguage }
                     </p>
                 </motion.div>
 
-                {/* SECTION 5: ALL BOOKINGS LEDGER */}
+                {/* SECTION 5: CUSTOMER PAYMENTS STATUS & AUDIT */}
+                <motion.div 
+                    variants={cardVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    className="bg-white border border-gray-200/60 rounded-[2rem] p-6 sm:p-8 shadow-sm mb-10 sm:mb-12 text-right"
+                    id="customer-payments-card-ar"
+                >
+                    <div className="flex flex-col xl:flex-row-reverse xl:items-center justify-between gap-4 mb-6">
+                        <div className="text-right">
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-950">حالة دفع العملاء والتدقيق المالي</h2>
+                            <p className="text-xs text-gray-400 font-bold mt-0.5">تفصيل حالة التحصيل والتدفّق لمستحقات وحصّة مثوى التسويقيّة لـ ٤٨ عميلاً</p>
+                        </div>
+                    </div>
+
+                    {/* Payment KPIs */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+                        {/* KPI 1: Collected */}
+                        <div className="bg-emerald-50/50 border border-emerald-100/70 p-5 rounded-2xl">
+                            <p className="text-xs font-bold text-emerald-700">المبالغ المحصلة (إيجارات)</p>
+                            <p className="text-2xl font-bold text-emerald-800 mt-1 font-mono">{formatSAR_Ar(paymentMetrics.paidRent)}</p>
+                            <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-emerald-100/40 text-xs font-semibold text-emerald-700 flex-row-reverse">
+                                <span>حصة إدارة مثوى المحصلة</span>
+                                <span className="font-mono">{formatSAR_Ar(paymentMetrics.paidMathwaa)}</span>
+                            </div>
+                        </div>
+
+                        {/* KPI 2: Pending */}
+                        <div className="bg-amber-50/50 border border-amber-100/70 p-5 rounded-2xl">
+                            <p className="text-xs font-bold text-amber-700">المبالغ المعلقة بانتظار السداد</p>
+                            <p className="text-2xl font-bold text-amber-800 mt-1 font-mono">{formatSAR_Ar(paymentMetrics.pendingRent)}</p>
+                            <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-amber-100/40 text-xs font-semibold text-amber-700 flex-row-reverse">
+                                <span>حصة إدارة مثوى المعلقة</span>
+                                <span className="font-mono">{formatSAR_Ar(paymentMetrics.pendingMathwaa)}</span>
+                            </div>
+                        </div>
+
+                        {/* KPI 3: Count & Ratio */}
+                        <div className="bg-indigo-50/40 border border-indigo-100/60 p-5 rounded-2xl flex flex-col justify-between">
+                            <div>
+                                <p className="text-xs font-bold text-indigo-700">نسبة العملاء المسددين</p>
+                                <p className="text-2xl font-bold text-indigo-800 mt-1 font-mono">
+                                    {paymentMetrics.paidCount.toLocaleString('ar-SA')} <span className="text-xs text-indigo-500">من أصل {paymentMetrics.totalCount.toLocaleString('ar-SA')}</span>
+                                </p>
+                            </div>
+                            <div className="mt-3">
+                                <div className="w-full bg-indigo-100/70 rounded-full h-1.5 overflow-hidden">
+                                    <div 
+                                        className="bg-indigo-650 h-1.5 rounded-full" 
+                                        style={{ width: `${(paymentMetrics.paidCount / paymentMetrics.totalCount) * 100}%` }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Filters & Search for Payments */}
+                    <div className="flex flex-col md:flex-row-reverse items-center justify-between gap-4 mb-6 p-4 bg-gray-55 rounded-2xl border border-gray-100" dir="rtl">
+                        <div className="w-full md:w-72 relative">
+                            <input 
+                                type="text" 
+                                placeholder="ابحث باسم العميل أو الفرع..." 
+                                value={paymentSearch}
+                                onChange={(e) => setPaymentSearch(e.target.value)}
+                                className="w-full text-xs sm:text-sm px-4 py-2 bg-white rounded-xl border border-gray-200 focus:outline-none focus:border-[#4A2C5A] transition-all text-right"
+                            />
+                        </div>
+
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <button 
+                                onClick={() => setPaymentFilter('all')}
+                                className={`flex-1 md:flex-none text-xs font-bold px-4 py-2 rounded-xl transition-all ${
+                                    paymentFilter === 'all' 
+                                        ? 'bg-[#4A2C5A] text-white' 
+                                        : 'bg-white text-gray-650 hover:bg-gray-100 border border-gray-200'
+                                }`}
+                            >
+                                الكل ({paymentMetrics.totalCount.toLocaleString('ar-SA')})
+                            </button>
+                            <button 
+                                onClick={() => setPaymentFilter('paid')}
+                                className={`flex-1 md:flex-none text-xs font-bold px-4 py-2 rounded-xl transition-all ${
+                                    paymentFilter === 'paid' 
+                                        ? 'bg-emerald-600 text-white' 
+                                        : 'bg-white text-gray-650 hover:bg-gray-100 border border-gray-200'
+                                }`}
+                            >
+                                مؤكد / مسدد ({paymentMetrics.paidCount.toLocaleString('ar-SA')})
+                            </button>
+                            <button 
+                                onClick={() => setPaymentFilter('unpaid')}
+                                className={`flex-1 md:flex-none text-xs font-bold px-4 py-2 rounded-xl transition-all ${
+                                    paymentFilter === 'unpaid' 
+                                        ? 'bg-amber-600 text-white' 
+                                        : 'bg-white text-gray-650 hover:bg-gray-100 border border-gray-200'
+                                }`}
+                            >
+                                معلق / متوقف ({(paymentMetrics.totalCount - paymentMetrics.paidCount).toLocaleString('ar-SA')})
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Table View */}
+                    <div className="overflow-x-auto -mx-6 sm:-mx-8">
+                        <div className="inline-block min-w-full align-middle px-6 sm:px-8">
+                            <table className="min-w-full divide-y divide-gray-100 text-right text-xs sm:text-sm" dir="rtl">
+                                <thead className="bg-gray-55 text-gray-500 font-bold uppercase tracking-wider select-none">
+                                    <tr>
+                                        <th className="py-3 px-4 text-right">العميل</th>
+                                        <th className="py-3 px-4 text-center">الفرع</th>
+                                        <th className="py-3 px-4 text-left">قيمة الدفع (الإيجار)</th>
+                                        <th className="py-3 px-4 text-left">حصة مثوى (الإدارة)</th>
+                                        <th className="py-3 px-4 text-right">حالة السداد / موضع التوقف</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 bg-white font-medium text-gray-700">
+                                    {filteredPayments.map((p, idx) => (
+                                        <tr key={idx} className="hover:bg-gray-55/65 transition-colors duration-150">
+                                            <td className="py-3.5 px-4 font-bold text-gray-900 text-right">
+                                                <div>{p.inputName}</div>
+                                                <div className="text-[10px] text-gray-400 font-normal">{p.matchedNameAr} / {p.matchedName}</div>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-center font-mono font-bold text-gray-500">
+                                                <span className="px-2 py-0.5 bg-gray-100 border border-gray-200/50 rounded-md">
+                                                    {p.branch}
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-left font-mono font-bold text-gray-900">
+                                                {formatSAR_Ar(p.rent)}
+                                            </td>
+                                            <td className="py-3.5 px-4 text-left font-mono font-bold text-[#4A2C5A]">
+                                                {formatSAR_Ar(p.juneCash)}
+                                            </td>
+                                            <td className="py-3.5 px-4 text-right">
+                                                {p.status === 'Confirmed' ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold rounded-full">
+                                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                                        مؤكد / مسدد
+                                                    </span>
+                                                ) : (
+                                                    <div className="space-y-1">
+                                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full ${
+                                                            p.status === 'Due July'
+                                                                ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                                                                : p.status === 'Pending Approval'
+                                                                ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                                                                : p.status === 'Facing Issue'
+                                                                ? 'bg-red-50 text-red-700 border border-red-100'
+                                                                : 'bg-rose-50 text-rose-700 border border-rose-100'
+                                                        }`}>
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${
+                                                                p.status === 'Due July' ? 'bg-blue-500' : p.status === 'Pending Approval' ? 'bg-amber-500' : 'bg-rose-500'
+                                                            }`} />
+                                                            {p.status_ar}
+                                                        </span>
+                                                        {p.reason_ar && (
+                                                            <div className="text-[10px] text-gray-400 font-semibold leading-relaxed mr-2">
+                                                                ← متوقف بسبب: {p.reason_ar}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredPayments.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="py-8 text-center text-gray-400 font-bold">
+                                                لا توجد نتائج تطابق خيارات البحث الفرديّة
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </motion.div>
+
+                {/* SECTION 6: ALL BOOKINGS LEDGER */}
                 <motion.div 
                     variants={cardVariants}
                     initial="hidden"

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { BOOKINGS, SYNC_DATA, Booking } from './constants';
+import { CUSTOMER_PAYMENTS, CustomerPayment } from './payments_data';
 import Header from './components/Header';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -30,6 +31,10 @@ const App_en: React.FC<{ onToggleLanguage: () => void }> = ({ onToggleLanguage }
     const [sortField, setSortField] = useState<keyof Booking>('id');
     const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
     const [showFormulasModal, setShowFormulasModal] = useState(false);
+
+    // Interactive state for customer payment list
+    const [paymentSearch, setPaymentSearch] = useState('');
+    const [paymentFilter, setPaymentFilter] = useState<'all' | 'paid' | 'unpaid'>('all');
 
     // Filter and sort bookings
     const filteredAndSortedBookings = useMemo(() => {
@@ -93,6 +98,57 @@ const App_en: React.FC<{ onToggleLanguage: () => void }> = ({ onToggleLanguage }
             setSortDirection('asc');
         }
     };
+
+    // Filtered customer payments list
+    const filteredPayments = useMemo(() => {
+        let result = [...CUSTOMER_PAYMENTS];
+
+        // Apply Search
+        if (paymentSearch.trim() !== '') {
+            const query = paymentSearch.toLowerCase();
+            result = result.filter(item => 
+                item.inputName.toLowerCase().includes(query) ||
+                item.matchedName.toLowerCase().includes(query) ||
+                item.matchedNameAr.toLowerCase().includes(query) ||
+                item.branch.toLowerCase().includes(query)
+            );
+        }
+
+        // Apply Status Filter
+        if (paymentFilter === 'paid') {
+            result = result.filter(item => item.status === 'Confirmed');
+        } else if (paymentFilter === 'unpaid') {
+            result = result.filter(item => item.status !== 'Confirmed');
+        }
+
+        return result;
+    }, [paymentSearch, paymentFilter]);
+
+    // Computed payment metrics
+    const paymentMetrics = useMemo(() => {
+        const totalRent = CUSTOMER_PAYMENTS.reduce((sum, item) => sum + item.rent, 0);
+        const totalMathwaa = CUSTOMER_PAYMENTS.reduce((sum, item) => sum + item.juneCash, 0);
+
+        const paidRent = CUSTOMER_PAYMENTS.filter(item => item.status === 'Confirmed').reduce((sum, item) => sum + item.rent, 0);
+        const paidMathwaa = CUSTOMER_PAYMENTS.filter(item => item.status === 'Confirmed').reduce((sum, item) => sum + item.juneCash, 0);
+
+        const pendingRent = CUSTOMER_PAYMENTS.filter(item => item.status !== 'Confirmed').reduce((sum, item) => sum + item.rent, 0);
+        const pendingMathwaa = CUSTOMER_PAYMENTS.filter(item => item.status !== 'Confirmed').reduce((sum, item) => sum + item.juneCash, 0);
+
+        const paidCount = CUSTOMER_PAYMENTS.filter(item => item.status === 'Confirmed').length;
+        const totalCount = CUSTOMER_PAYMENTS.length;
+
+        return {
+            totalRent,
+            totalMathwaa,
+            paidRent,
+            paidMathwaa,
+            pendingRent,
+            pendingMathwaa,
+            paidCount,
+            totalCount
+        };
+    }, []);
 
     // Performance VS Other chart data
     const sourceChartData = SYNC_DATA.sourceBreakdown.map(item => ({
@@ -594,6 +650,185 @@ const App_en: React.FC<{ onToggleLanguage: () => void }> = ({ onToggleLanguage }
                     <p className="text-[11px] text-gray-400 mt-4 italic font-semibold text-center uppercase tracking-wider">
                         Note: These 7 bookings contribute 0 to June cash collected but generate significant future cash value recorded in LTV totals.
                     </p>
+                </motion.div>
+
+                {/* SECTION 5: CUSTOMER PAYMENTS STATUS & AUDIT */}
+                <motion.div 
+                    variants={cardVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    className="bg-white border border-gray-200/60 rounded-[2rem] p-6 sm:p-8 shadow-sm mb-10 sm:mb-12"
+                    id="customer-payments-card"
+                >
+                    <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-6">
+                        <div>
+                            <h2 className="text-xl sm:text-2xl font-bold text-gray-950">Customer Payments & Financial Audit</h2>
+                            <p className="text-xs text-gray-400 font-medium mt-0.5">Detailed view of rent collections and Mathwaa's management fee shares across 48 customers</p>
+                        </div>
+                    </div>
+
+                    {/* Payment KPIs */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-6">
+                        {/* KPI 1: Collected */}
+                        <div className="bg-emerald-50/50 border border-emerald-100/70 p-5 rounded-2xl">
+                            <p className="text-xs font-bold text-emerald-750">Collected Payments (Rent)</p>
+                            <p className="text-2xl font-bold text-emerald-800 mt-1 font-mono">{formatSAR(paymentMetrics.paidRent)}</p>
+                            <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-emerald-100/40 text-xs font-semibold text-emerald-700">
+                                <span>Collected Mathwaa Share</span>
+                                <span className="font-mono">{formatSAR(paymentMetrics.paidMathwaa)}</span>
+                            </div>
+                        </div>
+
+                        {/* KPI 2: Pending */}
+                        <div className="bg-amber-50/50 border border-amber-100/70 p-5 rounded-2xl">
+                            <p className="text-xs font-bold text-amber-750">Pending Payments (Rent)</p>
+                            <p className="text-2xl font-bold text-amber-800 mt-1 font-mono">{formatSAR(paymentMetrics.pendingRent)}</p>
+                            <div className="flex justify-between items-center mt-2.5 pt-2 border-t border-amber-100/40 text-xs font-semibold text-amber-700">
+                                <span>Pending Mathwaa Share</span>
+                                <span className="font-mono">{formatSAR(paymentMetrics.pendingMathwaa)}</span>
+                            </div>
+                        </div>
+
+                        {/* KPI 3: Count & Ratio */}
+                        <div className="bg-indigo-50/40 border border-indigo-100/60 p-5 rounded-2xl flex flex-col justify-between">
+                            <div>
+                                <p className="text-xs font-bold text-indigo-750">Collection Progress (Customers)</p>
+                                <p className="text-2xl font-bold text-indigo-850 mt-1 font-mono">
+                                    {paymentMetrics.paidCount} <span className="text-xs text-indigo-500 font-medium">out of {paymentMetrics.totalCount}</span>
+                                </p>
+                            </div>
+                            <div className="mt-3">
+                                <div className="w-full bg-indigo-100/75 rounded-full h-1.5 overflow-hidden">
+                                    <div 
+                                        className="bg-indigo-650 h-1.5 rounded-full animate-pulse" 
+                                        style={{ width: `${(paymentMetrics.paidCount / paymentMetrics.totalCount) * 100}%` }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Filters & Search for Payments */}
+                    <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6 p-4 bg-gray-55 rounded-2xl border border-gray-100">
+                        <div className="w-full md:w-72 relative">
+                            <input 
+                                type="text" 
+                                placeholder="Search customer name or branch..." 
+                                value={paymentSearch}
+                                onChange={(e) => setPaymentSearch(e.target.value)}
+                                className="w-full text-xs sm:text-sm px-4 py-2 bg-white rounded-xl border border-gray-200 focus:outline-none focus:border-[#4A2C5A] transition-all"
+                            />
+                        </div>
+
+                        <div className="flex gap-2 w-full md:w-auto">
+                            <button 
+                                onClick={() => setPaymentFilter('all')}
+                                className={`flex-1 md:flex-none text-xs font-bold px-4 py-2 rounded-xl transition-all ${
+                                    paymentFilter === 'all' 
+                                        ? 'bg-[#4A2C5A] text-white' 
+                                        : 'bg-white text-gray-650 hover:bg-gray-100 border border-gray-200'
+                                }`}
+                            >
+                                All ({paymentMetrics.totalCount})
+                            </button>
+                            <button 
+                                onClick={() => setPaymentFilter('paid')}
+                                className={`flex-1 md:flex-none text-xs font-bold px-4 py-2 rounded-xl transition-all ${
+                                    paymentFilter === 'paid' 
+                                        ? 'bg-emerald-600 text-white' 
+                                        : 'bg-white text-gray-650 hover:bg-gray-100 border border-gray-200'
+                                }`}
+                            >
+                                Paid / Confirmed ({paymentMetrics.paidCount})
+                            </button>
+                            <button 
+                                onClick={() => setPaymentFilter('unpaid')}
+                                className={`flex-1 md:flex-none text-xs font-bold px-4 py-2 rounded-xl transition-all ${
+                                    paymentFilter === 'unpaid' 
+                                        ? 'bg-amber-600 text-white' 
+                                        : 'bg-white text-gray-650 hover:bg-gray-100 border border-gray-200'
+                                }`}
+                            >
+                                Pending / Stuck ({paymentMetrics.totalCount - paymentMetrics.paidCount})
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Table View */}
+                    <div className="overflow-x-auto -mx-6 sm:-mx-8">
+                        <div className="inline-block min-w-full align-middle px-6 sm:px-8">
+                            <table className="min-w-full divide-y divide-gray-100 text-left text-xs sm:text-sm">
+                                <thead className="bg-gray-55 text-gray-500 font-bold uppercase tracking-wider select-none">
+                                    <tr>
+                                        <th className="py-3 px-4 text-left">Customer</th>
+                                        <th className="py-3 px-4 text-center">Branch</th>
+                                        <th className="py-3 px-4 text-right">Rent Paid (Value)</th>
+                                        <th className="py-3 px-4 text-right">Mathwaa Share</th>
+                                        <th className="py-3 px-4 text-left">Payment Status / Obstacle</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 bg-white font-medium text-gray-700">
+                                    {filteredPayments.map((p, idx) => (
+                                        <tr key={idx} className="hover:bg-gray-55/65 transition-colors duration-150">
+                                            <td className="py-3.5 px-4 font-bold text-gray-900 text-left font-sans">
+                                                <div>{p.matchedName}</div>
+                                                <div className="text-[10px] text-gray-400 font-normal">{p.inputName} / {p.matchedNameAr}</div>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-center font-mono font-bold text-gray-500">
+                                                <span className="px-2 py-0.5 bg-gray-100 border border-gray-200/50 rounded-md">
+                                                    {p.branch}
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 px-4 text-right font-mono font-bold text-gray-900">
+                                                {formatSAR(p.rent)}
+                                            </td>
+                                            <td className="py-3.5 px-4 text-right font-mono font-bold text-[#4A2C5A]">
+                                                {formatSAR(p.juneCash)}
+                                            </td>
+                                            <td className="py-3.5 px-4 text-left">
+                                                {p.status === 'Confirmed' ? (
+                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold rounded-full">
+                                                        <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
+                                                        Confirmed / Paid
+                                                    </span>
+                                                ) : (
+                                                    <div className="space-y-1">
+                                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full ${
+                                                            p.status === 'Due July'
+                                                                ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                                                                : p.status === 'Pending Approval'
+                                                                ? 'bg-amber-50 text-amber-700 border border-amber-100'
+                                                                : p.status === 'Facing Issue'
+                                                                ? 'bg-red-50 text-red-700 border border-red-100'
+                                                                : 'bg-rose-50 text-rose-700 border border-rose-100'
+                                                        }`}>
+                                                            <span className={`w-1.5 h-1.5 rounded-full ${
+                                                                p.status === 'Due July' ? 'bg-blue-500' : p.status === 'Pending Approval' ? 'bg-amber-500' : 'bg-rose-500'
+                                                            }`} />
+                                                            {p.status === 'Due July' ? 'Due July 1st' : p.status === 'Pending Approval' ? 'Pending Approval' : p.status === 'Facing Issue' ? 'Facing Issue' : 'Pending Payment'}
+                                                        </span>
+                                                        {p.reason && (
+                                                            <div className="text-[10px] text-gray-400 font-semibold leading-relaxed ml-2">
+                                                                ← Stuck: {p.reason}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredPayments.length === 0 && (
+                                        <tr>
+                                            <td colSpan={5} className="py-8 text-center text-gray-400 font-bold">
+                                                No matches found for your search criteria.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </motion.div>
 
                 {/* SECTION 5: ALL BOOKINGS LEDGER */}
