@@ -1,0 +1,11 @@
+
+<svg width="250" height="80" viewBox="0 0 250 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- Icon Background -->
+    <rect x="10" y="15" width="50" height="50" rx="12" fill="#4A2C5A"/>
+    <!-- Icon Symbol (Stylized M) -->
+    <path d="M25 50L35 25L45 50" stroke="#F1ECE6" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- Text Group -->
+    <text x="75" y="42" font-family="sans-serif" font-weight="800" font-size="34" fill="#4A2C5A">Mabaat</text>
+    <text x="76" y="62" font-family="sans-serif" font-weight="600" font-size="11" fill="#A99484" letter-spacing="0.15em">PROPERTY MANAGEMENT</text>
+</svg>

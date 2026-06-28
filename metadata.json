@@ -1,0 +1,8 @@
+{
+  "name": "June Week 2 Growth Report",
+  "description": "Marketing Revenue Report - June 1–28, 2026",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
