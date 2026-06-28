@@ -1009,6 +1009,25 @@ export const BOOKINGS: Booking[] = [
     checkIn_ar: "١٤/٦ (يونيو)",
     juneCash: 1087.5,
     ltv: 6525.0
+  },
+  {
+    id: 53,
+    name: "Lanaa Muhammad",
+    name_ar: "لانا محمد",
+    branch: "M38",
+    location: "Al Sulaimaniyah",
+    location_ar: "السليمانية",
+    monthlyRent: 4500,
+    channel: "TikTok",
+    channel_ar: "تيك توك",
+    attribution: "Performance/Direct",
+    attribution_ar: "أداء / مباشر",
+    status: "Approved",
+    status_ar: "مقبول",
+    checkIn: "28/6 (June)",
+    checkIn_ar: "٢٨/٦ (يونيو)",
+    juneCash: 1125.0,
+    ltv: 4500.0
   }
 ];
 
@@ -1018,11 +1037,11 @@ export const SYNC_DATA = {
   
   // Hero KPIs
   heroKPIs: {
-    juneCashCollected: 39879.5,
-    performanceCash: 24431.5,
-    performanceCashPct: 61.3,
-    totalLtvGenerated: 222333,
-    approvedCount: 48,
+    juneCashCollected: 41004.25,
+    performanceCash: 25556.75,
+    performanceCashPct: 62.3,
+    totalLtvGenerated: 226833.4,
+    approvedCount: 49,
     cancelledCount: 4,
     renewalCount: 0
   },
@@ -1032,17 +1051,17 @@ export const SYNC_DATA = {
     {
       source: "Performance marketing",
       source_ar: "التسويق بالأداء",
-      juneCash: 24431.5,
-      pctOfCash: 61.3,
-      ltv: 101762,
+      juneCash: 25556.75,
+      pctOfCash: 62.3,
+      ltv: 106262,
       color: "#4A2C5A"
     },
     {
       source: "Other sources",
       source_ar: "مصادر أخرى",
-      juneCash: 15448,
-      pctOfCash: 38.7,
-      ltv: 120571,
+      juneCash: 15447.5,
+      pctOfCash: 37.7,
+      ltv: 120571.4,
       color: "#86868b"
     }
   ],
@@ -1052,9 +1071,9 @@ export const SYNC_DATA = {
     {
       type: "Direct (branch has live campaign)",
       type_ar: "مباشر (الحملة نشطة للفرع)",
-      juneCash: 18341.5,
-      ltv: 87972,
-      pctOfPerfCash: 75.1,
+      juneCash: 19466.75,
+      ltv: 92472,
+      pctOfPerfCash: 76.2,
       color: "#4A2C5A"
     },
     {
@@ -1062,7 +1081,7 @@ export const SYNC_DATA = {
       type_ar: "غير مباشر / تأثير غير مباشر",
       juneCash: 6090,
       ltv: 13790,
-      pctOfPerfCash: 24.9,
+      pctOfPerfCash: 23.8,
       color: "#A855F7"
     }
   ],

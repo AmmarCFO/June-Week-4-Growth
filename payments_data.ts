@@ -636,5 +636,18 @@ export const CUSTOMER_PAYMENTS: CustomerPayment[] = [
     rent: 3500,
     juneCash: 3500,
     branch: "M1"
+  },
+  {
+    id: 53,
+    inputName: "لانا محمد",
+    matchedName: "Lanaa Muhammad",
+    matchedNameAr: "لانا محمد",
+    status: "Confirmed",
+    status_ar: "مؤكد",
+    reason: "",
+    reason_ar: "",
+    rent: 4500,
+    juneCash: 1125,
+    branch: "M38"
   }
 ];
